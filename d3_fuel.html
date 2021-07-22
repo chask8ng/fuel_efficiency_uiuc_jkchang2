@@ -1,6 +1,6 @@
 <html>
 <script src='https://d3js.org/d3.v5.min.js'></script>
-<style> circle {fill: lightblue; stroke: black;} </style>
+<style> circle {fill: white;} </style>
 <body onload='init()'>
 <svg width=300 height=300>
 </svg>
@@ -8,23 +8,63 @@
 async function init() {
 const data = await d3.csv('https://flunky.github.io/cars2017.csv');
 var svg = d3.select("svg").append("g").attr("transform","translate(50,50)");
-var logScale = d3.scaleLog().domain([10, 150]).range([0, 200]);
-var logScaleY = d3.scaleLog().domain([10, 150]).range([200, 0]);
-var x = d3.scaleLog().domain([10,150]).range([0,200]);
-var y = d3.scaleLog().domain([10,150]).range([200,0]);
+var logScale = d3.scaleLog().domain([10, 50]).range([0, 200]);
+var logScaleY = d3.scaleLog().domain([10, 50]).range([200, 0]);
+var x = d3.scaleLog().domain([10,50]).range([0,200]);
+var y = d3.scaleLog().domain([10,50]).range([200,0]);
+var myColor = d3.scaleOrdinal(d3.schemeTableau10);
+var filtered = data.filter(function(d) {
+  return d["Fuel"] === "Gasoline" || d["Fuel"] === "Diesel"
+});
+
+var brand = d3.nest()
+  .key(function(d) { return d.Make; })
+  .rollup(function(v) { return {
+    AverageCityMPG: d3.mean(v, function(d) { return d.AverageCityMPG; }),
+    AverageHighwayMPG: d3.mean(v, function(d) { return d.AverageHighwayMPG; })
+  }; })
+  .entries(filtered);
+console.log(JSON.stringify(brand));
+
 svg
-.selectAll("circle").data(data).enter().append("circle")
-.attr("cx",function(d){return logScale(d.AverageCityMPG);})
-.attr("cy",function(d){return logScaleY(d.AverageHighwayMPG);})
-.attr("r",function(d){return +d.EngineCylinders + 2;});
+.selectAll("circle")
+.data(brand)
+.enter()
+.append("circle")
+.attr("cx",function(d){return logScale(d.value.AverageCityMPG);})
+.attr("cy",function(d){return logScaleY(d.value.AverageHighwayMPG);})
+.attr("r",function(d){return 4;})
+.attr("stroke", function(d){return myColor(d.key) });
 
-d3.select("svg").append("g")
-  .attr("transform","translate(50,50)")
-.call(d3.axisLeft(y).tickValues([10,20,50,100]).tickFormat(d3.format("~s")));
+svg
+//.selectAll("text")
+.append("text")
+  .attr("x", 120)             
+  .attr("y", 10)
+  .attr("text-anchor", "middle")  
+  .style("font-size", "10px") 
+  .text("smart leads all fuel efficiency");
 
-d3.select("svg").append("g")
-  .attr("transform","translate(50,250)")
-  .call(d3.axisBottom(x).tickValues([10,20,50,100]).tickFormat(d3.format("~s")));
+svg.append("text")
+  .attr("x", 100)             
+  .attr("y", -10)
+  .attr("text-anchor", "middle")  
+  .style("font-size", "14px") 
+  .text("Fuel Efficiency by Make");
+
+d3.select("svg")
+.append("g")
+.attr("transform","translate(50,50)")
+.call(d3.axisLeft(y)
+  .tickValues([10,20,50,100])
+  .tickFormat(d3.format("~s")));
+
+d3.select("svg")
+.append("g")
+.attr("transform","translate(50,250)")
+.call(d3.axisBottom(x)
+  .tickValues([10,20,50,100])
+  .tickFormat(d3.format("~s")));
 }
 </script>
 </body>
