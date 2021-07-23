@@ -2,30 +2,32 @@
 <script src='https://d3js.org/d3.v5.min.js'></script>
 <style> circle {fill: white;} </style>
 <body onload='init()'>
-<svg width=300 height=300>
+<svg width=500 height=500>
 </svg>
 <script>
 async function init() {
 const data = await d3.csv('https://flunky.github.io/cars2017.csv');
 var svg = d3.select("svg").append("g").attr("transform","translate(50,50)");
-var logScale = d3.scaleLog().domain([10, 50]).range([0, 200]);
-var logScaleY = d3.scaleLog().domain([10, 50]).range([200, 0]);
-var x = d3.scaleLog().domain([10,50]).range([0,200]);
-var y = d3.scaleLog().domain([10,50]).range([200,0]);
-var myColor = d3.scaleOrdinal(d3.schemeTableau10);
-var filtered = data.filter(function(d) {
-  return d["Fuel"] === "Gasoline" || d["Fuel"] === "Diesel"
-});
+var logScale = d3.scaleLog().domain([10, 150]).range([0, 200]);
+var logScaleY = d3.scaleLog().domain([10, 150]).range([200, 0]);
+var x = d3.scaleLog().domain([10,150]).range([0,200]);
+var y = d3.scaleLog().domain([10,150]).range([200,0]);
+var myColor = d3.scaleOrdinal(d3.schemeCategory10);
+//var filtered = data.filter(function(d) {
+//  return d["Fuel"] === "Gasoline" || d["Fuel"] === "Diesel"
+//});
 
 var brand = d3.nest()
-  .key(function(d) { return d.Make; })
+  .key(function(d) { return d.Fuel; })
   .rollup(function(v) { return {
     AverageCityMPG: d3.mean(v, function(d) { return d.AverageCityMPG; }),
     AverageHighwayMPG: d3.mean(v, function(d) { return d.AverageHighwayMPG; })
   }; })
-  .entries(filtered);
+  //.entries(filtered);
+  .entries(data);
 console.log(JSON.stringify(brand));
 
+//main circles
 svg
 .selectAll("circle")
 .data(brand)
@@ -36,22 +38,68 @@ svg
 .attr("r",function(d){return 4;})
 .attr("stroke", function(d){return myColor(d.key) });
 
+//title
+svg.append("text")
+  .attr("x", 100)             
+  .attr("y", -20)
+  .attr("text-anchor", "middle")  
+  .style("font-size", "16px") 
+  .text("Fuel Efficiency by Type 2017 (All Makes)");
+
+//annotation
 svg
 //.selectAll("text")
 .append("text")
-  .attr("x", 120)             
-  .attr("y", 10)
+  .attr("x", 200)             
+  .attr("y", 50)
   .attr("text-anchor", "middle")  
-  .style("font-size", "10px") 
-  .text("smart leads all fuel efficiency");
+  .style("font-size", "12px") 
+  .text("Electric leads all fuel efficiency");
 
-svg.append("text")
+//x axis label
+svg
+//.selectAll("text")
+.append("text")
   .attr("x", 100)             
-  .attr("y", -10)
+  .attr("y", 230)
   .attr("text-anchor", "middle")  
-  .style("font-size", "14px") 
-  .text("Fuel Efficiency by Make");
+  .style("font-size", "12px") 
+  .text("Average City MPG");
 
+//y axis label
+svg
+//.selectAll("text")
+.append("text")
+  .attr("x", -100)             
+  .attr("y", -30)
+  .attr("text-anchor", "middle")  
+  .style("font-size", "12px") 
+  .attr("transform", "rotate(-90)")
+  .text("Average Highway MPG");
+
+//legend dots
+svg.selectAll("mydots")
+  .data(brand)
+  .enter()
+  .append("circle")
+    .attr("cx", 100)
+    .attr("cy", function(d,i){ return 250 + i*25}) // 100 is where the first dot appears. 25 is the distance between dots
+    .attr("r", 5)
+    .style("fill", function(d){ return myColor(d.key)})
+
+//legend labels
+svg.selectAll("mylabels")
+  .data(brand)
+  .enter()
+  .append("text")
+    .attr("x", 120)
+    .attr("y", function(d,i){ return 250 + i*25}) // 100 is where the first dot appears. 25 is the distance between dots
+    .style("fill", function(d){ return myColor(d.key)})
+    .text(function(d){ return d.key})
+    .attr("text-anchor", "left")
+    .style("alignment-baseline", "middle")
+
+//y axis
 d3.select("svg")
 .append("g")
 .attr("transform","translate(50,50)")
@@ -59,6 +107,7 @@ d3.select("svg")
   .tickValues([10,20,50,100])
   .tickFormat(d3.format("~s")));
 
+//x axis
 d3.select("svg")
 .append("g")
 .attr("transform","translate(50,250)")
